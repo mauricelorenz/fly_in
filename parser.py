@@ -4,6 +4,13 @@ from pathlib import Path
 from typing import List, Tuple, Any
 
 
+class ParsingError(Exception):
+    def __init__(self, line_number: int, message: str) -> None:
+        self.line_number = line_number
+        self.message = message
+        super().__init__(f"Error in line {self.line_number}: {self.message}")
+
+
 class Zone(Enum):
     NORMAL = 1
     BLOCKED = 2
@@ -26,6 +33,13 @@ class Hub:
     zone: Zone = Zone.NORMAL
     color: str | None = None
     max_drones: int = 1
+
+
+@dataclass
+class Connection:
+    hub1: str
+    hub2: str
+    max_link_capacity: int = 1
 
 
 def get_input_list(path: Path) -> List[Tuple[int, str]]:
