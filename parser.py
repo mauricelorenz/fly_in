@@ -51,5 +51,17 @@ def get_input_list(path: Path) -> List[Tuple[int, str]]:
     return result
 
 
+def get_objects(
+    input_list: List[Tuple[int, str]]
+) -> Tuple[List[Drone], List[Hub], List[Connection]]:
+    nb_drones = None
+    for line_number, line in input_list:
+        if line.startswith("nb_drones"):
+            nb_drones = int(line.split(":")[1].strip()) # noqa
+        elif line.startswith(("start_hub", "hub", "end_hub")):
+            pass
+    return ([], [], [])
+
+
 def parse(path: Path) -> Any:
     input_list = get_input_list(path) # noqa
