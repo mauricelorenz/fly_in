@@ -1,6 +1,7 @@
 import sys
 from pathlib import Path
 from parser import parse
+from visualizer import Visualizer
 
 
 def main() -> None:
@@ -8,7 +9,8 @@ def main() -> None:
         path = Path(sys.argv[1])
     else:
         path = Path("maps/easy/01_linear_path.txt")
-    parse(path)
+    objects = parse(path)
+    window = Visualizer(objects)  # noqa
 
 
 if __name__ == "__main__":

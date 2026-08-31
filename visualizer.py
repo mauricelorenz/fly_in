@@ -1,3 +1,8 @@
+import pygame
+from typing import List, Tuple
+from parser import Drone, Hub, Connection
+
+
 KNOWN_COLORS = {
     "black": (0, 0, 0),
     "blue": (0, 0, 255),
@@ -19,3 +24,15 @@ KNOWN_COLORS = {
 }
 
 DEFAULT_COLOR = (200, 200, 200)
+
+
+class Visualizer:
+    def __init__(
+        self, objects: Tuple[List[Drone], List[Hub], List[Connection]]
+    ) -> None:
+        self.objects = objects
+        pygame.init()
+        self.screen = pygame.display.set_mode((800, 600))
+
+    def clear_screen(self) -> None:
+        self.screen.fill("white")
