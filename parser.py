@@ -106,7 +106,8 @@ def get_objects(
     return (drone_list, hub_list, connection_list)
 
 
-def parse(path: Path) -> Any:
+def parse(
+    path: Path
+) -> Tuple[List[Drone], List[Hub], List[Connection]]:
     input_list = get_input_list(path)
-    objects = get_objects(input_list)
-    print(objects)
+    return get_objects(input_list)
