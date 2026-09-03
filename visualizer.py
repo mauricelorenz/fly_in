@@ -55,4 +55,12 @@ class Visualizer:
         return (min(x_list), max(x_list), min(y_list), max(y_list))
 
     def scale_point(self, pos_x: int, pos_y: int) -> Tuple[int, int]:
-        return (0, 0)
+        min_x, max_x, min_y, max_y = self.get_boundaries()
+        padding = 50
+        canvas_width = WINDOW_WIDTH - 2 * padding
+        canvas_height = WINDOW_HEIGHT - 2 * padding
+        factor_x = canvas_width / ((max_x - min_x) or 1)
+        factor_y = canvas_height / ((max_y - min_y) or 1)
+        pixel_x = padding + (pos_x - min_x) * factor_x
+        pixel_y = padding + (pos_y - min_y) * factor_y
+        return (int(pixel_x), int(pixel_y))
