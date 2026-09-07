@@ -40,6 +40,9 @@ class Visualizer:
         self.boundaries = self.get_boundaries()
         self.scale_factor = self.get_scale_factor()
         self.hub_lookup = {hub.name: hub for hub in self.objects[1]}
+        self.font = pygame.font.SysFont(
+            None, int(min(self.scale_factor * 0.17, 20))
+        )
 
     def clear_screen(self) -> None:
         self.screen.fill((127, 127, 127))
@@ -77,23 +80,27 @@ class Visualizer:
         return (int(pixel_x), int(pixel_y))
 
     def draw_hubs(self) -> None:
-        for i in self.objects[1]:
-            pixel_xy = self.scale_point(i.pos_x, i.pos_y)
-            if i.color is None:
+        for hub in self.objects[1]:
+            pixel_x, pixel_y = self.scale_point(hub.pos_x, hub.pos_y)
+            if hub.color is None:
                 color = DEFAULT_COLOR
             else:
-                color = KNOWN_COLORS.get(i.color, DEFAULT_COLOR)
+                color = KNOWN_COLORS.get(hub.color, DEFAULT_COLOR)
             size = int(min(self.scale_factor * 0.4, 40))
-            pygame.draw.circle(self.screen, color, pixel_xy, size)
+            pygame.draw.circle(self.screen, color, (pixel_x, pixel_y), size)
             pygame.draw.circle(
-                self.screen, "black", pixel_xy,
+                self.screen, "black", (pixel_x, pixel_y),
                 size, size // 20 or 1
             )
+            text_surface = self.font.render(hub.name, True, "black")
+            text_x = pixel_x - text_surface.get_width() // 2
+            text_y = pixel_y + size * 1.1
+            self.screen.blit(text_surface, (text_x, text_y))
 
     def draw_connections(self) -> None:
-        for i in self.objects[2]:
-            hub1 = self.hub_lookup[i.hub1]
+        for connection in self.objects[2]:
+            hub1 = self.hub_lookup[connection.hub1]
             pixel_hub1 = self.scale_point(hub1.pos_x, hub1.pos_y)
-            hub2 = self.hub_lookup[i.hub2]
+            hub2 = self.hub_lookup[connection.hub2]
             pixel_hub2 = self.scale_point(hub2.pos_x, hub2.pos_y)
             pygame.draw.line(self.screen, "black", pixel_hub1, pixel_hub2)
