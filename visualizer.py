@@ -1,6 +1,6 @@
 import pygame
 from typing import List, Tuple
-from parser import Drone, Hub, Connection
+from models import Drone, Hub, Connection
 
 
 WINDOW_WIDTH = 1600
