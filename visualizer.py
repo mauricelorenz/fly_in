@@ -37,9 +37,13 @@ class Visualizer:
         self.objects = objects
         pygame.init()
         self.screen = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
+        pygame.display.set_caption("Fly-in")
         self.boundaries = self.get_boundaries()
         self.scale_factor = self.get_scale_factor()
-        self.hub_lookup = {hub.name: hub for hub in self.objects[1]}
+        self.hub_pixels = {
+            hub.name: self.to_pixels(hub.pos_x, hub.pos_y)
+            for hub in self.objects[1]
+        }
         self.font = pygame.font.SysFont(
             None, int(min(self.scale_factor * 0.17, 20))
         )
@@ -51,17 +55,20 @@ class Visualizer:
         running = True
         while running:
             for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    pygame.quit()
-                    return
+                if event.type == pygame.QUIT or (
+                    event.type == pygame.KEYDOWN
+                    and event.key == pygame.K_ESCAPE
+                ):
+                    running = False
             self.clear_screen()
             self.draw_connections()
             self.draw_hubs()
             pygame.display.flip()
+        pygame.quit()
 
     def get_boundaries(self) -> Tuple[int, int, int, int]:
-        x_list = [i.pos_x for i in self.objects[1]]
-        y_list = [i.pos_y for i in self.objects[1]]
+        x_list = [hub.pos_x for hub in self.objects[1]]
+        y_list = [hub.pos_y for hub in self.objects[1]]
         return (min(x_list), max(x_list), min(y_list), max(y_list))
 
     def get_scale_factor(self) -> float:
@@ -72,7 +79,7 @@ class Visualizer:
         factor_y = canvas_height / ((max_y - min_y) or 1)
         return min(factor_x, factor_y)
 
-    def scale_point(self, pos_x: int, pos_y: int) -> Tuple[int, int]:
+    def to_pixels(self, pos_x: int, pos_y: int) -> Tuple[int, int]:
         min_x, _, min_y, _ = self.boundaries
         factor = self.scale_factor
         pixel_x = PADDING + (pos_x - min_x) * factor
@@ -81,7 +88,7 @@ class Visualizer:
 
     def draw_hubs(self) -> None:
         for hub in self.objects[1]:
-            pixel_x, pixel_y = self.scale_point(hub.pos_x, hub.pos_y)
+            pixel_x, pixel_y = self.hub_pixels[hub.name]
             if hub.color is None:
                 color = DEFAULT_COLOR
             else:
@@ -99,8 +106,9 @@ class Visualizer:
 
     def draw_connections(self) -> None:
         for connection in self.objects[2]:
-            hub1 = self.hub_lookup[connection.hub1]
-            pixel_hub1 = self.scale_point(hub1.pos_x, hub1.pos_y)
-            hub2 = self.hub_lookup[connection.hub2]
-            pixel_hub2 = self.scale_point(hub2.pos_x, hub2.pos_y)
-            pygame.draw.line(self.screen, "black", pixel_hub1, pixel_hub2)
+            pygame.draw.line(
+                self.screen,
+                "black",
+                self.hub_pixels[connection.hub1],
+                self.hub_pixels[connection.hub2]
+            )
