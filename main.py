@@ -11,7 +11,14 @@ def main() -> None:
         path = Path("maps/easy/01_linear_path.txt")
     objects = parse(path)
     visualizer = Visualizer(objects)
-    visualizer.run()
+    test_turns = [
+        {1: "start", 2: "start"},
+        {1: "waypoint1", 2: "start"},
+        {1: "waypoint2", 2: "waypoint1"},
+        {1: "goal", 2: "waypoint2"},
+        {1: "goal", 2: "goal"}
+    ]
+    visualizer.run(test_turns)
 
 
 if __name__ == "__main__":

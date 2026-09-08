@@ -1,5 +1,5 @@
 import pygame
-from typing import List, Tuple
+from typing import List, Tuple, Dict, Any
 from models import Drone, Hub, Connection
 
 
@@ -44,14 +44,18 @@ class Visualizer:
             hub.name: self.to_pixels(hub.pos_x, hub.pos_y)
             for hub in self.objects[1]
         }
-        self.font = pygame.font.SysFont(
+        self.hub_font = pygame.font.SysFont(
             None, int(min(self.scale_factor * 0.17, 20))
         )
+        self.drone_font = pygame.font.SysFont(
+            None, int(min(self.scale_factor * 0.7, 20))
+        )
+        self.current_turn = 0
 
     def clear_screen(self) -> None:
-        self.screen.fill((127, 127, 127))
+        self.screen.fill((180, 180, 190))
 
-    def run(self) -> None:
+    def run(self, turns: List[Dict[int, Any]]) -> None:
         running = True
         while running:
             for event in pygame.event.get():
@@ -60,9 +64,16 @@ class Visualizer:
                     and event.key == pygame.K_ESCAPE
                 ):
                     running = False
+                elif (
+                    event.type == pygame.KEYDOWN
+                    and event.key == pygame.K_SPACE
+                ):
+                    if self.current_turn < len(turns) - 1:
+                        self.current_turn += 1
             self.clear_screen()
             self.draw_connections()
             self.draw_hubs()
+            self.draw_drones(turns[self.current_turn])
             pygame.display.flip()
         pygame.quit()
 
@@ -99,7 +110,7 @@ class Visualizer:
                 self.screen, "black", (pixel_x, pixel_y),
                 size, size // 20 or 1
             )
-            text_surface = self.font.render(hub.name, True, "black")
+            text_surface = self.hub_font.render(hub.name, True, "black")
             text_x = pixel_x - text_surface.get_width() // 2
             text_y = pixel_y + size * 1.1
             self.screen.blit(text_surface, (text_x, text_y))
@@ -112,3 +123,36 @@ class Visualizer:
                 self.hub_pixels[connection.hub1],
                 self.hub_pixels[connection.hub2]
             )
+
+    def draw_drones(self, current_pos: Dict[int, Any]) -> None:
+        size = int(min(self.scale_factor * 0.3, 30))
+        drones_by_pos: Dict[Any, List[int]] = {}
+        for drone_id, pos in current_pos.items():
+            if pos not in drones_by_pos:
+                drones_by_pos[pos] = []
+            drones_by_pos[pos].append(drone_id)
+        for pos in drones_by_pos:
+            if isinstance(pos, str):
+                drone_pixel = self.hub_pixels[pos]
+            else:
+                hub1, hub2 = pos
+                hub1_pixel = self.hub_pixels[hub1]
+                hub2_pixel = self.hub_pixels[hub2]
+                drone_pixel = (
+                    int((hub1_pixel[0] + hub2_pixel[0]) // 2),
+                    int((hub1_pixel[1] + hub2_pixel[1]) // 2)
+                )
+            pygame.draw.circle(self.screen, (127, 127, 127), drone_pixel, size)
+            pygame.draw.circle(
+                self.screen, "black", drone_pixel, size, size // 20 or 1
+            )
+            drones_amount = len(drones_by_pos[pos])
+            if drones_amount == 1:
+                text = f"D{drones_by_pos[pos][0]}"
+            else:
+                text = f"{drones_amount}x"
+            text_surface = self.drone_font.render(text, True, "black")
+            pixel_x, pixel_y = drone_pixel
+            text_x = pixel_x - text_surface.get_width() // 2
+            text_y = pixel_y - text_surface.get_height() // 2
+            self.screen.blit(text_surface, (text_x, text_y))
