@@ -10,8 +10,8 @@ def main() -> None:
     else:
         path = Path("maps/easy/01_linear_path.txt")
     objects = parse(path)
-    window = Visualizer(objects)  # noqa
-    window.run()
+    visualizer = Visualizer(objects)
+    visualizer.run()
 
 
 if __name__ == "__main__":
