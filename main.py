@@ -2,6 +2,7 @@ import sys
 from pathlib import Path
 from parser import parse
 from visualizer import Visualizer
+from simulation import Simulation
 
 
 def main() -> None:
@@ -10,6 +11,7 @@ def main() -> None:
     else:
         path = Path("maps/easy/01_linear_path.txt")
     objects = parse(path)
+    simulation = Simulation(objects)  # noqa
     visualizer = Visualizer(objects)
     test_turns = [
         {1: "start", 2: "start"},
