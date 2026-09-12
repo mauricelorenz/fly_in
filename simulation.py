@@ -32,7 +32,10 @@ class Simulation:
         self, connection: Connection, start_turn: int, cost: int
     ) -> bool:
         for t in range(start_turn, start_turn + cost):
-            key = (connection.hub1, connection.hub2, t)
+            sorted_hub1, sorted_hub2 = sorted(
+                (connection.hub1, connection.hub2)
+            )
+            key = (sorted_hub1, sorted_hub2, t)
             connection_count = self.occupied_connections.get(key, 0)
             if connection_count >= connection.max_link_capacity:
                 return False
@@ -77,3 +80,19 @@ class Simulation:
         path.append(current)
         path.reverse()
         return path
+
+    def _reserve_path(self, path: List[Tuple[str, int]]) -> None:
+        for hub_name, turn in path:
+            hub_key = (hub_name, turn)
+            self.occupied_hubs[hub_key] = (
+                self.occupied_hubs.get(hub_key, 0) + 1
+            )
+        for i in range(len(path) - 1):
+            hub1, turn1 = path[i]
+            hub2, turn2 = path[i + 1]
+            for t in range(turn1, turn2):
+                sorted_hub1, sorted_hub2 = sorted((hub1, hub2))
+                connection_key = (sorted_hub1, sorted_hub2, t)
+                self.occupied_connections[connection_key] = (
+                    self.occupied_connections.get(connection_key, 0) + 1
+                )
