@@ -1,5 +1,5 @@
 import heapq
-from typing import List, Tuple, Dict
+from typing import List, Tuple, Dict, Any
 from models import Drone, Hub, Connection, Zone
 
 
@@ -96,3 +96,30 @@ class Simulation:
                 self.occupied_connections[connection_key] = (
                     self.occupied_connections.get(connection_key, 0) + 1
                 )
+
+    def _build_turns(
+        self, drone_paths: Dict[int, List[Tuple[str, int]]]
+    ) -> List[Dict[int, Any]]:
+        turns_amount = 0
+        for drone_id in drone_paths:
+            for turn in drone_paths[drone_id]:
+                if turn[1] > turns_amount:
+                    turns_amount = turn[1]
+        turns: List[Dict[int, Any]] = [{} for i in range(turns_amount + 1)]
+        for drone_id, path in drone_paths.items():
+            for i in range(len(path) - 1):
+                hub1, turn1 = path[i]
+                hub2, turn2 = path[i + 1]
+                if hub1 != hub2:
+                    turns[turn2][drone_id] = hub2
+                    if turn2 - turn1 == 2:
+                        turns[turn1 + 1][drone_id] = (hub1, hub2)
+        return turns
+
+    def solve(self) -> List[Dict[int, Any]]:
+        drone_paths = {}
+        for drone in self.drones:
+            path = self._find_single_path(self.start_name, self.end_name)
+            self._reserve_path(path)
+            drone_paths[drone.drone_id] = path
+        return self._build_turns(drone_paths)
