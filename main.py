@@ -4,6 +4,7 @@ from parser import parse
 from visualizer import Visualizer
 from simulation import Simulation
 from output import Output
+from exceptions import PathError
 
 
 def main() -> None:
@@ -13,7 +14,11 @@ def main() -> None:
         path = Path("maps/easy/01_linear_path.txt")
     objects = parse(path)
     simulation = Simulation(objects)
-    turns = simulation.solve()
+    try:
+        turns = simulation.solve()
+    except PathError as e:
+        print(e)
+        sys.exit()
     output = Output()
     output.display(turns)
     visualizer = Visualizer(objects)

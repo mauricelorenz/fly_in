@@ -1,6 +1,7 @@
 import heapq
 from typing import List, Tuple, Dict, Any
 from models import Drone, Hub, Connection, Zone
+from exceptions import PathError
 
 
 class Simulation:
@@ -24,6 +25,24 @@ class Simulation:
             adjacency[c.hub2].append(c)
         return adjacency
 
+    def _is_reachable(self) -> bool:
+        visited = {self.start_name}
+        to_visit = [self.start_name]
+        while to_visit:
+            hub = to_visit.pop()
+            for connection in self.adjacency[hub]:
+                neighbor_name = (
+                    connection.hub2 if connection.hub1 == hub
+                    else connection.hub1
+                )
+                neighbor_hub = self.hub_lookup[neighbor_name]
+                if neighbor_hub.zone == Zone.BLOCKED:
+                    continue
+                if neighbor_name not in visited:
+                    visited.add(neighbor_name)
+                    to_visit.append(neighbor_name)
+        return self.end_name in visited
+
     def _is_hub_free(self, hub: Hub, turn: int) -> bool:
         hub_count = self.occupied_hubs.get((hub.name, turn), 0)
         return hub_count < hub.max_drones
@@ -41,13 +60,13 @@ class Simulation:
                 return False
         return True
 
-    def _find_single_path(self, start: str, end: str) -> List[Tuple[str, int]]:
-        queue = [(0, 0, start)]
+    def _find_single_path(self) -> List[Tuple[str, int]]:
+        queue = [(0, 0, self.start_name)]
         came_from = {}
         visited = set()
         while queue:
             turn, penalty, hub = heapq.heappop(queue)
-            if hub == end:
+            if hub == self.end_name:
                 break
             if (hub, turn) in visited:
                 continue
@@ -121,8 +140,10 @@ class Simulation:
 
     def solve(self) -> List[Dict[int, Any]]:
         drone_paths = {}
+        if not self._is_reachable():
+            raise PathError(self.start_name, self.end_name)
         for drone in self.drones:
-            path = self._find_single_path(self.start_name, self.end_name)
+            path = self._find_single_path()
             self._reserve_path(path)
             drone_paths[drone.drone_id] = path
         return self._build_turns(drone_paths)
