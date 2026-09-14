@@ -42,11 +42,11 @@ class Simulation:
         return True
 
     def _find_single_path(self, start: str, end: str) -> List[Tuple[str, int]]:
-        queue = [(0, start)]
+        queue = [(0, 0, start)]
         came_from = {}
         visited = set()
         while queue:
-            turn, hub = heapq.heappop(queue)
+            turn, penalty, hub = heapq.heappop(queue)
             if hub == end:
                 break
             if (hub, turn) in visited:
@@ -62,15 +62,18 @@ class Simulation:
                     continue
                 cost = 2 if neighbor_hub.zone == Zone.RESTRICTED else 1
                 new_turn = turn + cost
+                new_penalty = penalty + (
+                    0 if neighbor_hub.zone == Zone.PRIORITY else 1
+                )
                 if not self._is_hub_free(neighbor_hub, new_turn):
                     continue
                 if not self._is_connection_free(connection, turn, cost):
                     continue
-                heapq.heappush(queue, (new_turn, neighbor_name))
+                heapq.heappush(queue, (new_turn, new_penalty, neighbor_name))
                 came_from[(neighbor_name, new_turn)] = (hub, turn)
             wait_turn = turn + 1
             if self._is_hub_free(self.hub_lookup[hub], wait_turn):
-                heapq.heappush(queue, (wait_turn, hub))
+                heapq.heappush(queue, (wait_turn, penalty, hub))
                 came_from[(hub, wait_turn)] = (hub, turn)
         path = []
         current = (hub, turn)
