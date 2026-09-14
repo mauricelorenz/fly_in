@@ -2,13 +2,6 @@ from enum import Enum
 from dataclasses import dataclass
 
 
-class ParsingError(Exception):
-    def __init__(self, line_number: int, message: str) -> None:
-        self.line_number = line_number
-        self.message = message
-        super().__init__(f"Error in line {self.line_number}: {self.message}")
-
-
 class Zone(Enum):
     NORMAL = 1
     BLOCKED = 2
