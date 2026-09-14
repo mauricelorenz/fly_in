@@ -34,7 +34,7 @@ class Visualizer:
     def __init__(
         self, objects: Tuple[List[Drone], List[Hub], List[Connection]]
     ) -> None:
-        self.objects = objects
+        self.drones, self.hubs, self.connections = objects
         pygame.init()
         self.screen = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
         pygame.display.set_caption("Fly-in")
@@ -42,7 +42,7 @@ class Visualizer:
         self.scale_factor = self.get_scale_factor()
         self.hub_pixels = {
             hub.name: self.to_pixels(hub.pos_x, hub.pos_y)
-            for hub in self.objects[1]
+            for hub in self.hubs
         }
         self.hub_font = pygame.font.SysFont(
             None, int(min(self.scale_factor * 0.17, 20))
@@ -51,11 +51,13 @@ class Visualizer:
             None, int(min(self.scale_factor * 0.7, 20))
         )
         self.current_turn = 0
+        self.start_name = next(h.name for h in self.hubs if h.is_start)
 
     def clear_screen(self) -> None:
         self.screen.fill((180, 180, 190))
 
     def run(self, turns: List[Dict[int, Any]]) -> None:
+        full_positions = self._resolve_full_positions(turns)
         running = True
         while running:
             for event in pygame.event.get():
@@ -73,13 +75,13 @@ class Visualizer:
             self.clear_screen()
             self.draw_connections()
             self.draw_hubs()
-            self.draw_drones(turns[self.current_turn])
+            self.draw_drones(full_positions[self.current_turn])
             pygame.display.flip()
         pygame.quit()
 
     def get_boundaries(self) -> Tuple[int, int, int, int]:
-        x_list = [hub.pos_x for hub in self.objects[1]]
-        y_list = [hub.pos_y for hub in self.objects[1]]
+        x_list = [hub.pos_x for hub in self.hubs]
+        y_list = [hub.pos_y for hub in self.hubs]
         return (min(x_list), max(x_list), min(y_list), max(y_list))
 
     def get_scale_factor(self) -> float:
@@ -98,7 +100,7 @@ class Visualizer:
         return (int(pixel_x), int(pixel_y))
 
     def draw_hubs(self) -> None:
-        for hub in self.objects[1]:
+        for hub in self.hubs:
             pixel_x, pixel_y = self.hub_pixels[hub.name]
             if hub.color is None:
                 color = DEFAULT_COLOR
@@ -116,7 +118,7 @@ class Visualizer:
             self.screen.blit(text_surface, (text_x, text_y))
 
     def draw_connections(self) -> None:
-        for connection in self.objects[2]:
+        for connection in self.connections:
             pygame.draw.line(
                 self.screen,
                 "black",
@@ -156,3 +158,13 @@ class Visualizer:
             text_x = pixel_x - text_surface.get_width() // 2
             text_y = pixel_y - text_surface.get_height() // 2
             self.screen.blit(text_surface, (text_x, text_y))
+
+    def _resolve_full_positions(
+        self, turns: List[Dict[int, Any]]
+    ) -> List[Dict[int, Any]]:
+        full_positions = []
+        last_known = {d.drone_id: self.start_name for d in self.drones}
+        for turn in turns:
+            last_known.update(turn)
+            full_positions.append(dict(last_known))
+        return full_positions
