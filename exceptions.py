@@ -10,5 +10,5 @@ class PathError(Exception):
         self.start = start
         self.end = end
         super().__init__(
-            f"Error: No path found from {self.start} to {self.end}"
+            f"Error: No path found from '{self.start}' to '{self.end}'"
         )
