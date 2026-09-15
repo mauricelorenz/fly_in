@@ -1,13 +1,15 @@
 PYTHON = python3
 VENV = .venv
 PIP = pip
+MAP ?= maps/easy/01_linear_path.txt
+GUI ?= --gui
 
 install:
 	$(PYTHON) -m venv $(VENV)
 	$(VENV)/bin/$(PIP) install -r requirements.txt
 
 run:
-	$(VENV)/bin/$(PYTHON) main.py
+	$(VENV)/bin/$(PYTHON) main.py $(MAP) $(GUI)
 
 debug:
 	$(VENV)/bin/$(PYTHON) -m pdb main.py
