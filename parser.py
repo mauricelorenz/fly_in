@@ -69,7 +69,7 @@ class Parser:
                         line_number
                     )
                 connection_list.append(
-                    self._create_connection(content, line_number)
+                    self._create_connection(content, line_number, hub_list)
                 )
             else:
                 raise ParsingError(
@@ -173,18 +173,60 @@ class Parser:
                 )
         return Hub(name, pos_x, pos_y, is_start, is_end, **optional_dict)
 
-    def _create_connection(self, content: str, line_number: int) -> Connection:
-        connection = content.strip()
+    def _create_connection(
+        self, content: str, line_number: int, hub_list: List[Hub]
+    ) -> Connection:
         optional_dict: Dict[str, Any] = {}
-        if "[" in connection:
-            optional_params = connection[connection.index("["):].strip("[]")
-            for pair in optional_params.split():
-                key, value = pair.split("=", maxsplit=1)
-                optional_dict[key] = value
-            connection = connection[:connection.index("[")].strip()
-        hub1, hub2 = connection.strip().split("-")
-        if "max_link_capacity" in optional_dict:
-            optional_dict["max_link_capacity"] = int(
-                optional_dict["max_link_capacity"]
+        if "[" in content:
+            if (content.count("[") != 1 or content.count("]") != 1
+                    or not content.endswith("]")):
+                raise ParsingError(
+                    "Invalid bracket formatting for optional arguments",
+                    line_number
+                )
+            optional_params = (
+                content[content.index("["):].strip("[]")
             )
+            for pair in optional_params.split():
+                try:
+                    key, value = pair.split("=", maxsplit=1)
+                except ValueError:
+                    raise ParsingError(
+                        (f"Malformed optional argument '{pair}'. "
+                         "Expected 'key=value'"), line_number
+                    )
+                if key != "max_link_capacity":
+                    raise ParsingError(f"Invalid key '{key}'", line_number)
+                optional_dict[key] = value
+        try:
+            hubs = content.split()[0]
+            hub1, hub2 = hubs.split("-")
+            if not hub1 or not hub2:
+                raise ValueError
+        except ValueError:
+            raise ParsingError(
+                ("Invalid connection format. Expected '<hub1>-<hub2>', got "
+                    f"'{hubs}'"), line_number
+                )
+        if not any(h.name == hub1 for h in hub_list):
+            raise ParsingError(f"Hub '{hub1}' does not exist", line_number)
+        if not any(h.name == hub2 for h in hub_list):
+            raise ParsingError(f"Hub '{hub2}' does not exist", line_number)
+        if hub1 == hub2:
+            raise ParsingError(
+                f"Connection cannot link '{hub1}' to itself", line_number
+            )
+        if "max_link_capacity" in optional_dict:
+            try:
+                optional_dict["max_link_capacity"] = int(
+                    optional_dict["max_link_capacity"]
+                )
+                if optional_dict["max_link_capacity"] <= 0:
+                    raise ValueError
+            except ValueError:
+                raise ParsingError(
+                    ("Invalid value for max_link_capacity "
+                     f"'{optional_dict['max_link_capacity']}'. "
+                     "Expected positive integer"), line_number
+                )
         return Connection(hub1, hub2, **optional_dict)
