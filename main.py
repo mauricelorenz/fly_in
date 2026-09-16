@@ -1,7 +1,7 @@
 import os
 import sys
 from pathlib import Path
-from parser import parse
+from parser import Parser
 from simulation import Simulation
 from output import Output
 from exceptions import PathError
@@ -15,7 +15,8 @@ def main() -> None:
         sys.exit(1)
     gui = len(sys.argv) >= 3 and sys.argv[2] == "--gui"
     try:
-        objects = parse(Path(sys.argv[1]))
+        parser = Parser(Path(sys.argv[1]))
+        objects = parser.parse()
         simulation = Simulation(objects)
         turns = simulation.solve()
     except PathError as e:
