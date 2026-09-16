@@ -1,3 +1,4 @@
+import sys
 from pathlib import Path
 from typing import List, Tuple, Dict, Any
 from models import Zone, Drone, Hub, Connection
@@ -53,7 +54,9 @@ class Parser:
         is_end = (hub_type == "end_hub")
         if "zone" in optional_dict:
             optional_dict["zone"] = Zone[optional_dict["zone"].upper()]
-        if "max_drones" in optional_dict:
+        if is_start or is_end:
+            optional_dict["max_drones"] = sys.maxsize
+        elif "max_drones" in optional_dict:
             optional_dict["max_drones"] = int(optional_dict["max_drones"])
         return Hub(name, pos_x, pos_y, is_start, is_end, **optional_dict)
 

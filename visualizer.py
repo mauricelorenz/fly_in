@@ -120,7 +120,8 @@ class Visualizer:
             stats = (f"[{'R' if hub.zone == Zone.RESTRICTED else ''}"
                      f"{'P' if hub.zone == Zone.PRIORITY else ''}"
                      f"{hub.max_drones}]")
-            stats_surface = self.hub_font.render(stats, True, "black")
+            show_stats = stats if not any((hub.is_start, hub.is_end)) else ""
+            stats_surface = self.hub_font.render(show_stats, True, "black")
             text_x = pixel_x - stats_surface.get_width() // 2
             text_y = pixel_y + size * 1.05 + name_surface.get_height() * 1.2
             self.screen.blit(stats_surface, (text_x, text_y))
