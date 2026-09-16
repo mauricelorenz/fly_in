@@ -93,7 +93,15 @@ class Parser:
             raise ParsingError("Missing separator ':'", line_number)
 
     def _create_drones(self, content: str, line_number: int) -> List[Drone]:
-        nb_drones = int(content)
+        try:
+            nb_drones = int(content)
+            if nb_drones <= 0:
+                raise ValueError
+        except ValueError:
+            raise ParsingError(
+                (f"Invalid number of drones '{content}'. "
+                 "Expected positive integer"), line_number
+            )
         return [Drone(i + 1) for i in range(nb_drones)]
 
     def _create_hub(
