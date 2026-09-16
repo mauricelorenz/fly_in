@@ -37,23 +37,79 @@ class Parser:
     def _get_objects(
         self, input_list: List[Tuple[int, str]]
     ) -> Tuple[List[Drone], List[Hub], List[Connection]]:
-        hub_list = []
-        connection_list = []
+        drone_list: List[Drone] = []
+        hub_list: List[Hub] = []
+        connection_list: List[Connection] = []
         for line_number, line in input_list:
-            if line.startswith("nb_drones"):
-                drone_list = self._create_drones(line)
-            elif line.startswith(("start_hub", "hub", "end_hub")):
-                hub_list.append(self._create_hub(line))
-            elif line.startswith("connection"):
-                connection_list.append(self._create_connection(line))
+            directive, content = self._split_line(line_number, line)
+            if directive == "nb_drones":
+                if drone_list:
+                    raise ParsingError(
+                        "'nb_drones' already defined", line_number
+                    )
+                if hub_list or connection_list:
+                    raise ParsingError(
+                        ("'nb_drones' must be defined before hubs and "
+                         "connections"), line_number
+                    )
+                drone_list = self._create_drones(content, line_number)
+            elif directive in ("start_hub", "hub", "end_hub"):
+                if not drone_list:
+                    raise ParsingError(
+                        f"'nb_drones' must be defined before '{directive}'",
+                        line_number
+                    )
+                if connection_list:
+                    raise ParsingError(
+                        f"'{directive}' cannot be defined after connections",
+                        line_number
+                    )
+                hub_list.append(
+                    self._create_hub(directive, content, line_number)
+                )
+            elif directive == "connection":
+                if not drone_list:
+                    raise ParsingError(
+                        "'nb_drones' must be defined before connections",
+                        line_number
+                    )
+                if not hub_list:
+                    raise ParsingError(
+                        "'connection' cannot be defined before hubs",
+                        line_number
+                    )
+                connection_list.append(
+                    self._create_connection(content, line_number)
+                )
+            else:
+                raise ParsingError(
+                    f"Unknown directive '{directive}'", line_number
+                )
+        if not any(h.is_start for h in hub_list):
+            raise ParsingError("Missing mandatory 'start_hub'")
+        if not any(h.is_end for h in hub_list):
+            raise ParsingError("Missing mandatory 'end_hub'")
         return (drone_list, hub_list, connection_list)
 
-    def _create_drones(self, line: str) -> List[Drone]:
-        nb_drones = int(line.split(":")[1].strip())
+    def _split_line(self, line_number: int, line: str) -> Tuple[str, str]:
+        try:
+            directive, content = map(str.strip, line.split(":", maxsplit=1))
+            if not directive or not content:
+                raise ParsingError(
+                    "Directive or content cannot be empty", line_number
+                )
+            return (directive, content)
+        except ValueError:
+            raise ParsingError("Missing separator ':'", line_number)
+
+    def _create_drones(self, content: str, line_number: int) -> List[Drone]:
+        nb_drones = int(content)
         return [Drone(i + 1) for i in range(nb_drones)]
 
-    def _create_hub(self, line: str) -> Hub:
-        line_list = line.split(":")
+    def _create_hub(
+        self, directive: str, content: str, line_number: int
+    ) -> Hub:
+        line_list = [directive, content]
         hub_type = line_list[0].strip()
         params = line_list[1].strip().split()[:3]
         optional_dict: Dict[str, Any] = {}
@@ -77,8 +133,8 @@ class Parser:
             optional_dict["max_drones"] = int(optional_dict["max_drones"])
         return Hub(name, pos_x, pos_y, is_start, is_end, **optional_dict)
 
-    def _create_connection(self, line: str) -> Connection:
-        connection = line.split(":")[1].strip()
+    def _create_connection(self, content: str, line_number: int) -> Connection:
+        connection = content.strip()
         optional_dict: Dict[str, Any] = {}
         if "[" in connection:
             optional_params = connection[connection.index("["):].strip("[]")
