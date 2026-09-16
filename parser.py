@@ -47,21 +47,11 @@ class Parser:
                     raise ParsingError(
                         "'nb_drones' already defined", line_number
                     )
-                if hub_list or connection_list:
-                    raise ParsingError(
-                        ("'nb_drones' must be defined before hubs and "
-                         "connections"), line_number
-                    )
                 drone_list = self._create_drones(content, line_number)
             elif directive in ("start_hub", "hub", "end_hub"):
                 if not drone_list:
                     raise ParsingError(
                         f"'nb_drones' must be defined before '{directive}'",
-                        line_number
-                    )
-                if connection_list:
-                    raise ParsingError(
-                        f"'{directive}' cannot be defined after connections",
                         line_number
                     )
                 hub_list.append(
