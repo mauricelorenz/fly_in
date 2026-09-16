@@ -55,7 +55,7 @@ class Parser:
                         line_number
                     )
                 hub_list.append(
-                    self._create_hub(directive, content, line_number)
+                    self._create_hub(directive, content, line_number, hub_list)
                 )
             elif directive == "connection":
                 if not drone_list:
@@ -105,30 +105,72 @@ class Parser:
         return [Drone(i + 1) for i in range(nb_drones)]
 
     def _create_hub(
-        self, directive: str, content: str, line_number: int
+        self, directive: str, content: str,
+        line_number: int, hub_list: List[Hub]
     ) -> Hub:
-        line_list = [directive, content]
-        hub_type = line_list[0].strip()
-        params = line_list[1].strip().split()[:3]
+        params = content.split()[:3]
+        if len(params) < 3:
+            raise ParsingError("Missing positional argument", line_number)
         optional_dict: Dict[str, Any] = {}
-        if "[" in line_list[1]:
+        if "[" in content:
+            if (content.count("[") != 1 or content.count("]") != 1
+                    or not content.endswith("]")):
+                raise ParsingError(
+                    "Invalid bracket formatting for optional arguments",
+                    line_number
+                )
             optional_params = (
-                line_list[1][line_list[1].index("["):].strip("[]")
+                content[content.index("["):].strip("[]")
             )
             for pair in optional_params.split():
-                key, value = pair.split("=", maxsplit=1)
+                try:
+                    key, value = pair.split("=", maxsplit=1)
+                except ValueError:
+                    raise ParsingError(
+                        (f"Malformed optional argument '{pair}'. "
+                         "Expected 'key=value'"), line_number
+                    )
+                if key not in ("zone", "color", "max_drones"):
+                    raise ParsingError(f"Invalid key '{key}'", line_number)
                 optional_dict[key] = value
         name = params[0]
-        pos_x = int(params[1])
-        pos_y = int(params[2])
-        is_start = (hub_type == "start_hub")
-        is_end = (hub_type == "end_hub")
-        if "zone" in optional_dict:
-            optional_dict["zone"] = Zone[optional_dict["zone"].upper()]
+        if "-" in name:
+            raise ParsingError("'-' cannot be part of hub name", line_number)
+        for hub in hub_list:
+            if name == hub.name:
+                raise ParsingError(
+                    f"Hub name '{name}' used twice", line_number
+                )
+        try:
+            pos_x = int(params[1])
+            pos_y = int(params[2])
+        except ValueError:
+            raise ParsingError(
+                ("Invalid coordinates. Expected '<int x> <int y>', got "
+                    f"'{params[1]} {params[2]}'"), line_number
+                )
+        is_start = (directive == "start_hub")
+        is_end = (directive == "end_hub")
+        try:
+            if "zone" in optional_dict:
+                optional_dict["zone"] = Zone[optional_dict["zone"].upper()]
+        except KeyError:
+            raise ParsingError(
+                f"Invalid zone type '{optional_dict['zone']}'", line_number
+            )
         if is_start or is_end:
             optional_dict["max_drones"] = sys.maxsize
         elif "max_drones" in optional_dict:
-            optional_dict["max_drones"] = int(optional_dict["max_drones"])
+            try:
+                optional_dict["max_drones"] = int(optional_dict["max_drones"])
+                if optional_dict["max_drones"] <= 0:
+                    raise ValueError
+            except ValueError:
+                raise ParsingError(
+                    ("Invalid value for max_drones "
+                     f"'{optional_dict['max_drones']}'. "
+                     "Expected positive integer"), line_number
+                )
         return Hub(name, pos_x, pos_y, is_start, is_end, **optional_dict)
 
     def _create_connection(self, content: str, line_number: int) -> Connection:
