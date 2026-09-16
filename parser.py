@@ -10,10 +10,10 @@ class Parser:
         self.path = path
 
     def parse(self) -> Tuple[List[Drone], List[Hub], List[Connection]]:
-        input_list = self.get_input_list()
-        return self.get_objects(input_list)
+        input_list = self._get_input_list()
+        return self._get_objects(input_list)
 
-    def get_input_list(self) -> List[Tuple[int, str]]:
+    def _get_input_list(self) -> List[Tuple[int, str]]:
         result = []
         try:
             with open(self.path) as f:
@@ -21,7 +21,7 @@ class Parser:
                     if not line.startswith("#") and line.strip():
                         result.append((number, line.strip()))
             if not result:
-                raise ParsingError("File is empty or contains no instructions", 1)
+                raise ParsingError("File is empty or contains no instructions")
             return result
         except FileNotFoundError:
             raise ParsingError(f"File '{self.path}' not found")
@@ -34,22 +34,25 @@ class Parser:
                 f"File '{self.path}' is not a valid UTF-8 text file"
             )
 
-    def get_objects(
+    def _get_objects(
         self, input_list: List[Tuple[int, str]]
     ) -> Tuple[List[Drone], List[Hub], List[Connection]]:
         hub_list = []
         connection_list = []
         for line_number, line in input_list:
             if line.startswith("nb_drones"):
-                nb_drones = int(line.split(":")[1].strip())
-                drone_list = [Drone(i + 1) for i in range(nb_drones)]
+                drone_list = self._create_drones(line)
             elif line.startswith(("start_hub", "hub", "end_hub")):
-                hub_list.append(self.create_hub(line))
+                hub_list.append(self._create_hub(line))
             elif line.startswith("connection"):
-                connection_list.append(self.create_connection(line))
+                connection_list.append(self._create_connection(line))
         return (drone_list, hub_list, connection_list)
 
-    def create_hub(self, line: str) -> Hub:
+    def _create_drones(self, line: str) -> List[Drone]:
+        nb_drones = int(line.split(":")[1].strip())
+        return [Drone(i + 1) for i in range(nb_drones)]
+
+    def _create_hub(self, line: str) -> Hub:
         line_list = line.split(":")
         hub_type = line_list[0].strip()
         params = line_list[1].strip().split()[:3]
@@ -74,7 +77,7 @@ class Parser:
             optional_dict["max_drones"] = int(optional_dict["max_drones"])
         return Hub(name, pos_x, pos_y, is_start, is_end, **optional_dict)
 
-    def create_connection(self, line: str) -> Connection:
+    def _create_connection(self, line: str) -> Connection:
         connection = line.split(":")[1].strip()
         optional_dict: Dict[str, Any] = {}
         if "[" in connection:
