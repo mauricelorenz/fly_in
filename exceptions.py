@@ -1,5 +1,5 @@
 class ParsingError(Exception):
-    def __init__(self, message: str, line_number: int = None) -> None:
+    def __init__(self, message: str, line_number: int | None = None) -> None:
         self.line_number = line_number
         self.message = message
         show_line = f" in line {self.line_number}" if self.line_number else ""
