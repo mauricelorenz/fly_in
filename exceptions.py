@@ -1,8 +1,9 @@
 class ParsingError(Exception):
-    def __init__(self, line_number: int, message: str) -> None:
+    def __init__(self, message: str, line_number: int = None) -> None:
         self.line_number = line_number
         self.message = message
-        super().__init__(f"Error in line {self.line_number}: {self.message}")
+        show_line = f" in line {self.line_number}" if self.line_number else ""
+        super().__init__(f"ParsingError{show_line}: {self.message}")
 
 
 class PathError(Exception):
@@ -10,5 +11,5 @@ class PathError(Exception):
         self.start = start
         self.end = end
         super().__init__(
-            f"Error: No path found from '{self.start}' to '{self.end}'"
+            f"PathError: No path found from '{self.start}' to '{self.end}'"
         )

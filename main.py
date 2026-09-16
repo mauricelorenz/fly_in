@@ -4,7 +4,7 @@ from pathlib import Path
 from parser import Parser
 from simulation import Simulation
 from output import Output
-from exceptions import PathError
+from exceptions import PathError, ParsingError
 os.environ["PYGAME_HIDE_SUPPORT_PROMPT"] = "1"
 from visualizer import Visualizer  # noqa: E402
 
@@ -19,7 +19,7 @@ def main() -> None:
         objects = parser.parse()
         simulation = Simulation(objects)
         turns = simulation.solve()
-    except PathError as e:
+    except (PathError, ParsingError) as e:
         print(e, file=sys.stderr)
         sys.exit(1)
     output = Output()

@@ -2,6 +2,7 @@ import sys
 from pathlib import Path
 from typing import List, Tuple, Dict, Any
 from models import Zone, Drone, Hub, Connection
+from exceptions import ParsingError
 
 
 class Parser:
@@ -14,11 +15,24 @@ class Parser:
 
     def get_input_list(self) -> List[Tuple[int, str]]:
         result = []
-        with open(self.path) as f:
-            for number, line in enumerate(f, 1):
-                if not line.startswith("#") and line.strip():
-                    result.append((number, line.strip()))
-        return result
+        try:
+            with open(self.path) as f:
+                for number, line in enumerate(f, 1):
+                    if not line.startswith("#") and line.strip():
+                        result.append((number, line.strip()))
+            if not result:
+                raise ParsingError("File is empty or contains no instructions", 1)
+            return result
+        except FileNotFoundError:
+            raise ParsingError(f"File '{self.path}' not found")
+        except PermissionError:
+            raise ParsingError(f"Permission for file '{self.path}' denied")
+        except IsADirectoryError:
+            raise ParsingError(f"'{self.path}' is a directory")
+        except UnicodeDecodeError:
+            raise ParsingError(
+                f"File '{self.path}' is not a valid UTF-8 text file"
+            )
 
     def get_objects(
         self, input_list: List[Tuple[int, str]]
