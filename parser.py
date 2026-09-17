@@ -1,8 +1,9 @@
 import sys
 from pathlib import Path
-from typing import List, Tuple, Dict, Any
-from models import COLORS, Zone, Drone, Hub, Connection
+from typing import Any, Dict, List, Tuple
+
 from exceptions import ParsingError
+from models import COLORS, Connection, Drone, Hub, Zone
 
 
 class Parser:

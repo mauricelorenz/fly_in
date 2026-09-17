@@ -1,10 +1,12 @@
 import os
 import sys
 from pathlib import Path
+
+from exceptions import ParsingError, PathError
+from output import Output
 from parser import Parser
 from simulation import Simulation
-from output import Output
-from exceptions import PathError, ParsingError
+
 os.environ["PYGAME_HIDE_SUPPORT_PROMPT"] = "1"
 from visualizer import Visualizer  # noqa: E402
 

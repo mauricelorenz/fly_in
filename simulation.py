@@ -1,7 +1,8 @@
 import heapq
-from typing import List, Tuple, Dict, Any
-from models import Drone, Hub, Connection, Zone
+from typing import Any, Dict, List, Tuple
+
 from exceptions import PathError
+from models import Connection, Drone, Hub, Zone
 
 
 class Simulation:
@@ -123,10 +124,9 @@ class Simulation:
         self, drone_paths: Dict[int, List[Tuple[str, int]]]
     ) -> List[Dict[int, Any]]:
         turns_amount = 0
-        for drone_id in drone_paths:
-            for turn in drone_paths[drone_id]:
-                if turn[1] > turns_amount:
-                    turns_amount = turn[1]
+        for path in drone_paths.values():
+            for turn in path:
+                turns_amount = max(turns_amount, turn[1])
         turns: List[Dict[int, Any]] = [{} for i in range(turns_amount + 1)]
         for drone_id, path in drone_paths.items():
             for i in range(len(path) - 1):

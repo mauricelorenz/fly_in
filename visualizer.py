@@ -1,7 +1,8 @@
-import pygame
-from typing import List, Tuple, Dict, Any
-from models import COLORS, Zone, Drone, Hub, Connection
+from typing import Any, Dict, List, Tuple
 
+import pygame
+
+from models import COLORS, Connection, Drone, Hub, Zone
 
 WINDOW_WIDTH = 1600
 WINDOW_HEIGHT = 800
@@ -47,9 +48,9 @@ class Visualizer:
                 elif (
                     event.type == pygame.KEYDOWN
                     and event.key == pygame.K_SPACE
+                    and self.current_turn < len(turns) - 1
                 ):
-                    if self.current_turn < len(turns) - 1:
-                        self.current_turn += 1
+                    self.current_turn += 1
             self.clear_screen()
             self.draw_connections()
             self.draw_hubs()
@@ -120,7 +121,7 @@ class Visualizer:
             if pos not in drones_by_pos:
                 drones_by_pos[pos] = []
             drones_by_pos[pos].append(drone_id)
-        for pos in drones_by_pos:
+        for pos, value in drones_by_pos.items():
             if isinstance(pos, str):
                 drone_pixel = self.hub_pixels[pos]
             else:
@@ -135,9 +136,9 @@ class Visualizer:
             pygame.draw.circle(
                 self.screen, "black", drone_pixel, size, size // 20 or 1
             )
-            drones_amount = len(drones_by_pos[pos])
+            drones_amount = len(value)
             if drones_amount == 1:
-                text = f"D{drones_by_pos[pos][0]}"
+                text = f"D{value[0]}"
             else:
                 text = f"{drones_amount}x"
             text_surface = self.drone_font.render(text, True, "black")
