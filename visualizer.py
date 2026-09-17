@@ -1,33 +1,11 @@
 import pygame
 from typing import List, Tuple, Dict, Any
-from models import Drone, Hub, Connection, Zone
+from models import COLORS, Zone, Drone, Hub, Connection
 
 
 WINDOW_WIDTH = 1600
 WINDOW_HEIGHT = 800
 PADDING = 100
-
-KNOWN_COLORS = {
-    "black": (0, 0, 0),
-    "blue": (0, 0, 255),
-    "brown": (165, 42, 42),
-    "crimson": (220, 20, 60),
-    "cyan": (0, 255, 255),
-    "darkred": (139, 0, 0),
-    "gold": (255, 215, 0),
-    "green": (0, 128, 0),
-    "lime": (0, 255, 0),
-    "magenta": (255, 0, 255),
-    "maroon": (128, 0, 0),
-    "orange": (255, 165, 0),
-    "purple": (128, 0, 128),
-    "rainbow": (255, 255, 255),
-    "red": (255, 0, 0),
-    "violet": (238, 130, 238),
-    "yellow": (255, 255, 0),
-}
-
-DEFAULT_COLOR = (200, 200, 200)
 
 
 class Visualizer:
@@ -104,9 +82,9 @@ class Visualizer:
         for hub in self.hubs:
             pixel_x, pixel_y = self.hub_pixels[hub.name]
             if hub.color is None:
-                color = DEFAULT_COLOR
+                color = COLORS["default"]
             else:
-                color = KNOWN_COLORS.get(hub.color, DEFAULT_COLOR)
+                color = COLORS.get(hub.color, COLORS["default"])
             size = int(min(min(self.scale_factor) * 0.4, 40))
             pygame.draw.circle(self.screen, color, (pixel_x, pixel_y), size)
             pygame.draw.circle(

@@ -1,7 +1,7 @@
 import sys
 from pathlib import Path
 from typing import List, Tuple, Dict, Any
-from models import Zone, Drone, Hub, Connection
+from models import COLORS, Zone, Drone, Hub, Connection
 from exceptions import ParsingError
 
 
@@ -69,7 +69,9 @@ class Parser:
                         line_number
                     )
                 connection_list.append(
-                    self._create_connection(content, line_number, hub_list)
+                    self._create_connection(
+                        content, line_number, hub_list, connection_list
+                    )
                 )
             else:
                 raise ParsingError(
@@ -149,6 +151,11 @@ class Parser:
                 ("Invalid coordinates. Expected '<int x> <int y>', got "
                     f"'{params[1]} {params[2]}'"), line_number
                 )
+        if any(pos_x == h.pos_x and pos_y == h.pos_y for h in hub_list):
+            raise ParsingError(
+                f"A hub with coordinates '{pos_x} {pos_y}' already exists",
+                line_number
+            )
         is_start = (directive == "start_hub")
         is_end = (directive == "end_hub")
         try:
@@ -171,10 +178,16 @@ class Parser:
                      f"'{optional_dict['max_drones']}'. "
                      "Expected positive integer"), line_number
                 )
+        color = optional_dict.get("color", None)
+        if color and color not in COLORS:
+            optional_dict["color"] = "default"
+            print(f"Warning in line {line_number}: Unknown color '{color}'. "
+                  f"Falling back to default", file=sys.stderr)
         return Hub(name, pos_x, pos_y, is_start, is_end, **optional_dict)
 
     def _create_connection(
-        self, content: str, line_number: int, hub_list: List[Hub]
+        self, content: str, line_number: int,
+        hub_list: List[Hub], connection_list: List[Connection]
     ) -> Connection:
         optional_dict: Dict[str, Any] = {}
         if "[" in content:
@@ -215,6 +228,13 @@ class Parser:
         if hub1 == hub2:
             raise ParsingError(
                 f"Connection cannot link '{hub1}' to itself", line_number
+            )
+        if any((hub1 == c.hub1 and hub2 == c.hub2)
+               or (hub1 == c.hub2 and hub2 == c.hub1)
+               for c in connection_list):
+            raise ParsingError(
+                f"Connection between '{hub1}' and '{hub2}' already exists",
+                line_number
             )
         if "max_link_capacity" in optional_dict:
             try:
