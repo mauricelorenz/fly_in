@@ -17,6 +17,16 @@ class Simulation:
         self.start_name = next(h.name for h in self.hubs if h.is_start)
         self.end_name = next(h.name for h in self.hubs if h.is_end)
 
+    def solve(self) -> List[Dict[int, Any]]:
+        drone_paths = {}
+        if not self._is_reachable():
+            raise PathError(self.start_name, self.end_name)
+        for drone in self.drones:
+            path = self._find_single_path()
+            self._reserve_path(path)
+            drone_paths[drone.drone_id] = path
+        return self._build_turns(drone_paths)
+
     def _build_adjacency(
         self, hubs: List[Hub], connections: List[Connection]
     ) -> Dict[str, List[Connection]]:
@@ -43,23 +53,6 @@ class Simulation:
                     visited.add(neighbor_name)
                     to_visit.append(neighbor_name)
         return self.end_name in visited
-
-    def _is_hub_free(self, hub: Hub, turn: int) -> bool:
-        hub_count = self.occupied_hubs.get((hub.name, turn), 0)
-        return hub_count < hub.max_drones
-
-    def _is_connection_free(
-        self, connection: Connection, start_turn: int, cost: int
-    ) -> bool:
-        for t in range(start_turn, start_turn + cost):
-            sorted_hub1, sorted_hub2 = sorted(
-                (connection.hub1, connection.hub2)
-            )
-            key = (sorted_hub1, sorted_hub2, t)
-            connection_count = self.occupied_connections.get(key, 0)
-            if connection_count >= connection.max_link_capacity:
-                return False
-        return True
 
     def _find_single_path(self) -> List[Tuple[str, int]]:
         queue = [(0, 0, self.start_name)]
@@ -104,6 +97,23 @@ class Simulation:
         path.reverse()
         return path
 
+    def _is_hub_free(self, hub: Hub, turn: int) -> bool:
+        hub_count = self.occupied_hubs.get((hub.name, turn), 0)
+        return hub_count < hub.max_drones
+
+    def _is_connection_free(
+        self, connection: Connection, start_turn: int, cost: int
+    ) -> bool:
+        for t in range(start_turn, start_turn + cost):
+            sorted_hub1, sorted_hub2 = sorted(
+                (connection.hub1, connection.hub2)
+            )
+            key = (sorted_hub1, sorted_hub2, t)
+            connection_count = self.occupied_connections.get(key, 0)
+            if connection_count >= connection.max_link_capacity:
+                return False
+        return True
+
     def _reserve_path(self, path: List[Tuple[str, int]]) -> None:
         for hub_name, turn in path:
             hub_key = (hub_name, turn)
@@ -137,13 +147,3 @@ class Simulation:
                     if turn2 - turn1 == 2:
                         turns[turn1 + 1][drone_id] = (hub1, hub2)
         return turns
-
-    def solve(self) -> List[Dict[int, Any]]:
-        drone_paths = {}
-        if not self._is_reachable():
-            raise PathError(self.start_name, self.end_name)
-        for drone in self.drones:
-            path = self._find_single_path()
-            self._reserve_path(path)
-            drone_paths[drone.drone_id] = path
-        return self._build_turns(drone_paths)

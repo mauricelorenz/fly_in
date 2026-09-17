@@ -17,10 +17,10 @@ class Visualizer:
         pygame.init()
         self.screen = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
         pygame.display.set_caption("Fly-in")
-        self.boundaries = self.get_boundaries()
-        self.scale_factor = self.get_scale_factor()
+        self.boundaries = self._get_boundaries()
+        self.scale_factor = self._get_scale_factor()
         self.hub_pixels = {
-            hub.name: self.to_pixels(hub.pos_x, hub.pos_y)
+            hub.name: self._to_pixels(hub.pos_x, hub.pos_y)
             for hub in self.hubs
         }
         self.hub_font = pygame.font.SysFont(
@@ -31,9 +31,6 @@ class Visualizer:
         )
         self.current_turn = 0
         self.start_name = next(h.name for h in self.hubs if h.is_start)
-
-    def clear_screen(self) -> None:
-        self.screen.fill((180, 180, 190))
 
     def run(self, turns: List[Dict[int, Any]]) -> None:
         full_positions = self._resolve_full_positions(turns)
@@ -51,35 +48,27 @@ class Visualizer:
                     and self.current_turn < len(turns) - 1
                 ):
                     self.current_turn += 1
-            self.clear_screen()
-            self.draw_connections()
-            self.draw_hubs()
-            self.draw_drones(full_positions[self.current_turn])
+            self._clear_screen()
+            self._draw_connections()
+            self._draw_hubs()
+            self._draw_drones(full_positions[self.current_turn])
             pygame.display.flip()
         pygame.quit()
 
-    def get_boundaries(self) -> Tuple[int, int, int, int]:
-        x_list = [hub.pos_x for hub in self.hubs]
-        y_list = [hub.pos_y for hub in self.hubs]
-        return (min(x_list), max(x_list), min(y_list), max(y_list))
+    def _resolve_full_positions(
+        self, turns: List[Dict[int, Any]]
+    ) -> List[Dict[int, Any]]:
+        full_positions = []
+        last_known = {d.drone_id: self.start_name for d in self.drones}
+        for turn in turns:
+            last_known.update(turn)
+            full_positions.append(dict(last_known))
+        return full_positions
 
-    def get_scale_factor(self) -> Tuple[float, float]:
-        min_x, max_x, min_y, max_y = self.boundaries
-        canvas_width = WINDOW_WIDTH - 2 * PADDING
-        canvas_height = WINDOW_HEIGHT - 2 * PADDING
-        factor_x = canvas_width / ((max_x - min_x) or 1)
-        factor_y = canvas_height / ((max_y - min_y) or 1)
-        return (factor_x, factor_y)
+    def _clear_screen(self) -> None:
+        self.screen.fill((180, 180, 190))
 
-    def to_pixels(self, pos_x: int, pos_y: int) -> Tuple[int, int]:
-        min_x, _, min_y, _ = self.boundaries
-        factor_x, factor_y = self.scale_factor
-        pixel_x = PADDING + (pos_x - min_x) * factor_x
-        dynamic_height = min(factor_y, (factor_y + factor_x) // 2)
-        pixel_y = PADDING + (pos_y - min_y) * dynamic_height
-        return (int(pixel_x), int(pixel_y))
-
-    def draw_hubs(self) -> None:
+    def _draw_hubs(self) -> None:
         for hub in self.hubs:
             pixel_x, pixel_y = self.hub_pixels[hub.name]
             if hub.color is None:
@@ -105,7 +94,7 @@ class Visualizer:
             text_y = pixel_y + size * 1.05 + name_surface.get_height() * 1.2
             self.screen.blit(stats_surface, (text_x, text_y))
 
-    def draw_connections(self) -> None:
+    def _draw_connections(self) -> None:
         for connection in self.connections:
             pygame.draw.line(
                 self.screen,
@@ -114,7 +103,7 @@ class Visualizer:
                 self.hub_pixels[connection.hub2]
             )
 
-    def draw_drones(self, current_pos: Dict[int, Any]) -> None:
+    def _draw_drones(self, current_pos: Dict[int, Any]) -> None:
         size = int(min(min(self.scale_factor) * 0.3, 30))
         drones_by_pos: Dict[Any, List[int]] = {}
         for drone_id, pos in current_pos.items():
@@ -147,12 +136,23 @@ class Visualizer:
             text_y = pixel_y - text_surface.get_height() // 2
             self.screen.blit(text_surface, (text_x, text_y))
 
-    def _resolve_full_positions(
-        self, turns: List[Dict[int, Any]]
-    ) -> List[Dict[int, Any]]:
-        full_positions = []
-        last_known = {d.drone_id: self.start_name for d in self.drones}
-        for turn in turns:
-            last_known.update(turn)
-            full_positions.append(dict(last_known))
-        return full_positions
+    def _get_boundaries(self) -> Tuple[int, int, int, int]:
+        x_list = [hub.pos_x for hub in self.hubs]
+        y_list = [hub.pos_y for hub in self.hubs]
+        return (min(x_list), max(x_list), min(y_list), max(y_list))
+
+    def _get_scale_factor(self) -> Tuple[float, float]:
+        min_x, max_x, min_y, max_y = self.boundaries
+        canvas_width = WINDOW_WIDTH - 2 * PADDING
+        canvas_height = WINDOW_HEIGHT - 2 * PADDING
+        factor_x = canvas_width / ((max_x - min_x) or 1)
+        factor_y = canvas_height / ((max_y - min_y) or 1)
+        return (factor_x, factor_y)
+
+    def _to_pixels(self, pos_x: int, pos_y: int) -> Tuple[int, int]:
+        min_x, _, min_y, _ = self.boundaries
+        factor_x, factor_y = self.scale_factor
+        pixel_x = PADDING + (pos_x - min_x) * factor_x
+        dynamic_height = min(factor_y, (factor_y + factor_x) // 2)
+        pixel_y = PADDING + (pos_y - min_y) * dynamic_height
+        return (int(pixel_x), int(pixel_y))
