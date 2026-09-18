@@ -1,3 +1,5 @@
+"""Entry point for the fly-in drone simulation."""
+
 import os
 import sys
 from pathlib import Path
@@ -12,6 +14,7 @@ from visualizer import Visualizer  # noqa: E402
 
 
 def main() -> None:
+    """Parse a map, compute drone paths, and display the result."""
     if len(sys.argv) < 2:
         print("Usage: python3 main.py <map file> [--gui]", file=sys.stderr)
         sys.exit(1)

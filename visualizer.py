@@ -1,3 +1,5 @@
+"""Pygame-based GUI for visualizing the fly-in drone simulation."""
+
 from typing import Any, Dict, List, Tuple
 
 import pygame
@@ -10,9 +12,17 @@ PADDING = 100
 
 
 class Visualizer:
+    """Renders the simulation state on screen using Pygame."""
+
     def __init__(
         self, objects: Tuple[List[Drone], List[Hub], List[Connection]]
     ) -> None:
+        """Initialize the Pygame window and compute layout scaling.
+
+        Args:
+            objects: A tuple of (drones, hubs, connections) parsed from the map
+                file.
+        """
         self.drones, self.hubs, self.connections = objects
         pygame.init()
         self.screen = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
@@ -33,6 +43,12 @@ class Visualizer:
         self.start_name = next(h.name for h in self.hubs if h.is_start)
 
     def run(self, turns: List[Dict[int, Any]]) -> None:
+        """Run the main event loop, advancing turns on spacebar press.
+
+        Args:
+            turns: A list of turn dictionaries mapping drone IDs to their
+                positions.
+        """
         full_positions = self._resolve_full_positions(turns)
         running = True
         while running:
@@ -58,6 +74,15 @@ class Visualizer:
     def _resolve_full_positions(
         self, turns: List[Dict[int, Any]]
     ) -> List[Dict[int, Any]]:
+        """Fill drone positions per turn, carrying forward last location.
+
+        Args:
+            turns: The raw turn data where only changes are recorded.
+
+        Returns:
+            A list of turn dictionaries with complete drone positions at each
+            turn.
+        """
         full_positions = []
         last_known = {d.drone_id: self.start_name for d in self.drones}
         for turn in turns:
@@ -66,9 +91,11 @@ class Visualizer:
         return full_positions
 
     def _clear_screen(self) -> None:
+        """Fill the screen with the background color."""
         self.screen.fill((180, 180, 190))
 
     def _draw_hubs(self) -> None:
+        """Draw each hub as a colored circle with its name and stats."""
         for hub in self.hubs:
             pixel_x, pixel_y = self.hub_pixels[hub.name]
             if hub.color is None:
@@ -95,6 +122,7 @@ class Visualizer:
             self.screen.blit(stats_surface, (text_x, text_y))
 
     def _draw_connections(self) -> None:
+        """Draw a line for every connection between hubs."""
         for connection in self.connections:
             pygame.draw.line(
                 self.screen,
@@ -104,6 +132,12 @@ class Visualizer:
             )
 
     def _draw_drones(self, current_pos: Dict[int, Any]) -> None:
+        """Draw drones at their current positions, grouping overlapping ones.
+
+        Args:
+            current_pos: A mapping from drone ID to its current hub name or
+                connection tuple.
+        """
         size = int(min(min(self.scale_factor) * 0.3, 30))
         drones_by_pos: Dict[Any, List[int]] = {}
         for drone_id, pos in current_pos.items():
@@ -137,11 +171,21 @@ class Visualizer:
             self.screen.blit(text_surface, (text_x, text_y))
 
     def _get_boundaries(self) -> Tuple[int, int, int, int]:
+        """Compute the bounding box of all hub coordinates.
+
+        Returns:
+            A tuple of (min_x, max_x, min_y, max_y).
+        """
         x_list = [h.pos_x for h in self.hubs]
         y_list = [h.pos_y for h in self.hubs]
         return (min(x_list), max(x_list), min(y_list), max(y_list))
 
     def _get_scale_factor(self) -> Tuple[float, float]:
+        """Compute the scale factors for mapping coordinates to screen pixels.
+
+        Returns:
+            A tuple of (scale_x, scale_y).
+        """
         min_x, max_x, min_y, max_y = self.boundaries
         canvas_width = WINDOW_WIDTH - 2 * PADDING
         canvas_height = WINDOW_HEIGHT - 2 * PADDING
@@ -150,6 +194,15 @@ class Visualizer:
         return (factor_x, factor_y)
 
     def _to_pixels(self, pos_x: int, pos_y: int) -> Tuple[int, int]:
+        """Convert map coordinates to screen pixel positions.
+
+        Args:
+            pos_x: The x coordinate on the map.
+            pos_y: The y coordinate on the map.
+
+        Returns:
+            A tuple of (pixel_x, pixel_y) on the screen.
+        """
         min_x, _, min_y, _ = self.boundaries
         factor_x, factor_y = self.scale_factor
         pixel_x = PADDING + (pos_x - min_x) * factor_x

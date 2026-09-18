@@ -1,3 +1,5 @@
+"""Data models for drones, hubs, connections, zones, and colors."""
+
 from dataclasses import dataclass
 from enum import Enum
 
@@ -24,6 +26,8 @@ COLORS = {
 
 
 class Zone(Enum):
+    """Zone types that affect how drones traverse hubs."""
+
     NORMAL = 1
     BLOCKED = 2
     RESTRICTED = 3
@@ -32,11 +36,15 @@ class Zone(Enum):
 
 @dataclass
 class Drone:
+    """A drone that must travel from the start hub to the end hub."""
+
     drone_id: int
 
 
 @dataclass
 class Hub:
+    """A location on the map where drones can be positioned or pass through."""
+
     name: str
     pos_x: int
     pos_y: int
@@ -49,6 +57,8 @@ class Hub:
 
 @dataclass
 class Connection:
+    """An edge linking two hubs with a limited traversal capacity."""
+
     hub1: str
     hub2: str
     max_link_capacity: int = 1

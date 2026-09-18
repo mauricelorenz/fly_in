@@ -1,3 +1,5 @@
+"""Drone routing solver that finds collision-free paths from start to end."""
+
 import heapq
 from typing import Any, Dict, List, Tuple
 
@@ -6,9 +8,17 @@ from models import Connection, Drone, Hub, Zone
 
 
 class Simulation:
+    """Finds a valid route for each drone through the hub network."""
+
     def __init__(
         self, objects: Tuple[List[Drone], List[Hub], List[Connection]]
     ) -> None:
+        """Build the graph representation and initialize occupancy tracking.
+
+        Args:
+            objects: A tuple of (drones, hubs, connections) parsed from the
+                map file.
+        """
         self.drones, self.hubs, self.connections = objects
         self.hub_lookup = {h.name: h for h in self.hubs}
         self.adjacency = self._build_adjacency()
@@ -18,6 +28,15 @@ class Simulation:
         self.end_name = next(h.name for h in self.hubs if h.is_end)
 
     def solve(self) -> List[Dict[int, Any]]:
+        """Find a path for every drone and return the turn-by-turn result.
+
+        Returns:
+            A list of dictionaries, one per turn, mapping drone IDs to their
+            hub positions or in-transit tuples.
+
+        Raises:
+            PathError: If the end hub is not reachable from the start hub.
+        """
         drone_paths = {}
         if not self._is_reachable():
             raise PathError(self.start_name, self.end_name)
@@ -28,6 +47,11 @@ class Simulation:
         return self._build_turns(drone_paths)
 
     def _build_adjacency(self) -> Dict[str, List[Connection]]:
+        """Build adjacency list mapping hub names to connected edges.
+
+        Returns:
+            A dictionary of hub name to list of Connection objects.
+        """
         adjacency: Dict[str, List[Connection]] = {
             h.name: [] for h in self.hubs
         }
@@ -37,6 +61,11 @@ class Simulation:
         return adjacency
 
     def _is_reachable(self) -> bool:
+        """Check if end hub is reachable from start hub via BFS.
+
+        Returns:
+            True if a path exists, False otherwise.
+        """
         visited = {self.start_name}
         to_visit = [self.start_name]
         while to_visit:
@@ -55,6 +84,11 @@ class Simulation:
         return self.end_name in visited
 
     def _find_single_path(self) -> List[Tuple[str, int]]:
+        """Find the lowest-cost path for a single drone using a priority queue.
+
+        Returns:
+            An ordered list of (hub_name, turn) tuples from start to end.
+        """
         queue = [(0, 0, self.start_name)]
         came_from = {}
         visited = set()
@@ -98,12 +132,32 @@ class Simulation:
         return path
 
     def _is_hub_free(self, hub: Hub, turn: int) -> bool:
+        """Check if a hub has capacity for another drone at a given turn.
+
+        Args:
+            hub: The hub to check.
+            turn: The turn number to check availability for.
+
+        Returns:
+            True if the hub is not at capacity, False otherwise.
+        """
         hub_count = self.occupied_hubs.get((hub.name, turn), 0)
         return hub_count < hub.max_drones
 
     def _is_connection_free(
         self, connection: Connection, start_turn: int, cost: int
     ) -> bool:
+        """Check if a connection has capacity for the entire traversal.
+
+        Args:
+            connection: The connection to check.
+            start_turn: The turn the drone would begin using the connection.
+            cost: How many turns the traversal takes.
+
+        Returns:
+            True if capacity is available across all affected turns, False
+            otherwise.
+        """
         for t in range(start_turn, start_turn + cost):
             sorted_hub1, sorted_hub2 = sorted(
                 (connection.hub1, connection.hub2)
@@ -115,6 +169,12 @@ class Simulation:
         return True
 
     def _reserve_path(self, path: List[Tuple[str, int]]) -> None:
+        """Mark path hubs and connections as occupied for their turns.
+
+        Args:
+            path: An ordered list of (hub_name, turn) tuples representing the
+                drone's route.
+        """
         for hub_name, turn in path:
             hub_key = (hub_name, turn)
             self.occupied_hubs[hub_key] = (
@@ -133,6 +193,16 @@ class Simulation:
     def _build_turns(
         self, drone_paths: Dict[int, List[Tuple[str, int]]]
     ) -> List[Dict[int, Any]]:
+        """Convert drone paths into a unified list of turn dictionaries.
+
+        Args:
+            drone_paths: A mapping from drone ID to its ordered path of
+                (hub_name, turn) tuples.
+
+        Returns:
+            A list of dictionaries (one per turn) mapping drone IDs to their
+            hub name or in-transit connection tuple.
+        """
         turns_amount = 0
         for path in drone_paths.values():
             for turn in path:

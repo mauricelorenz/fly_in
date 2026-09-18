@@ -1,3 +1,5 @@
+"""Parser that reads map files and produces simulation objects."""
+
 import sys
 from pathlib import Path
 from typing import Any, Dict, List, Tuple
@@ -7,14 +9,38 @@ from models import COLORS, Connection, Drone, Hub, Zone
 
 
 class Parser:
+    """Parses a map file into lists of drones, hubs, and connections."""
+
     def __init__(self, path: Path) -> None:
+        """Store the path to the input map file.
+
+        Args:
+            path: The file system path of the map file to parse.
+        """
         self.path = path
 
     def parse(self) -> Tuple[List[Drone], List[Hub], List[Connection]]:
+        """Read the map file and return the parsed simulation objects.
+
+        Returns:
+            A tuple of (drones, hubs, connections).
+
+        Raises:
+            ParsingError: If the file is missing, unreadable, or contains
+                invalid directives.
+        """
         input_list = self._get_input_list()
         return self._get_objects(input_list)
 
     def _get_input_list(self) -> List[Tuple[int, str]]:
+        """Read file and return non-empty, non-comment lines with line numbers.
+
+        Returns:
+            A list of (line_number, line_content) tuples.
+
+        Raises:
+            ParsingError: If the file cannot be read or is empty.
+        """
         result = []
         try:
             with open(self.path) as f:
@@ -38,6 +64,19 @@ class Parser:
     def _get_objects(
         self, input_list: List[Tuple[int, str]]
     ) -> Tuple[List[Drone], List[Hub], List[Connection]]:
+        """Convert parsed lines to lists of Drone, Hub, and Connection objects.
+
+        Args:
+            input_list: A list of (line_number, line_content) tuples from the
+                map file.
+
+        Returns:
+            A tuple of (drones, hubs, connections).
+
+        Raises:
+            ParsingError: If directives are out of order, duplicated, or
+                malformed.
+        """
         drone_list: List[Drone] = []
         hub_list: List[Hub] = []
         connection_list: List[Connection] = []
@@ -85,6 +124,18 @@ class Parser:
         return (drone_list, hub_list, connection_list)
 
     def _split_line(self, line_number: int, line: str) -> Tuple[str, str]:
+        """Split a line into its directive and content portions.
+
+        Args:
+            line_number: The line number for error reporting.
+            line: The raw line from the map file.
+
+        Returns:
+            A tuple of (directive, content).
+
+        Raises:
+            ParsingError: If the line is missing the ':' separator.
+        """
         try:
             directive, content = map(str.strip, line.split(":", maxsplit=1))
             if not directive or not content:
@@ -96,6 +147,19 @@ class Parser:
             raise ParsingError("Missing separator ':'", line_number)
 
     def _create_drones(self, content: str, line_number: int) -> List[Drone]:
+        """Create Drone objects from a nb_drones directive.
+
+        Args:
+            content: The content portion of the directive, expected to be a
+                positive integer.
+            line_number: The line number for error reporting.
+
+        Returns:
+            A list of Drone instances with IDs starting at 1.
+
+        Raises:
+            ParsingError: If the content is not a valid positive integer.
+        """
         try:
             nb_drones = int(content)
             if nb_drones <= 0:
@@ -111,6 +175,23 @@ class Parser:
         self, directive: str, content: str,
         line_number: int, hub_list: List[Hub]
     ) -> Hub:
+        """Parse a hub/start_hub/end_hub line into a Hub object.
+
+        Args:
+            directive: One of 'hub', 'start_hub', or 'end_hub'.
+            content: The content after the colon on the directive line.
+            line_number: The line number for error reporting.
+            hub_list: Hubs already parsed, used to check for duplicate names
+                or coordinates.
+
+        Returns:
+            A fully constructed Hub instance.
+
+        Raises:
+            ParsingError: If the line is missing required arguments, uses a
+                duplicate name or coordinates, or has invalid optional
+                arguments.
+        """
         args = content.split()[:3]
         if len(args) < 3:
             raise ParsingError("Missing positional argument", line_number)
@@ -190,6 +271,24 @@ class Parser:
         self, content: str, line_number: int,
         hub_list: List[Hub], connection_list: List[Connection]
     ) -> Connection:
+        """Parse a connection line into a Connection object.
+
+        Args:
+            content: The content after the colon on the directive line.
+            line_number: The line number for error reporting.
+            hub_list: Hubs already parsed, used to verify referenced hubs
+                exist.
+            connection_list: Connections already parsed, used to check for
+                duplicates.
+
+        Returns:
+            A fully constructed Connection instance.
+
+        Raises:
+            ParsingError: If the format is invalid, referenced hubs do not
+                exist, a hub is connected to itself, or the connection already
+                exists.
+        """
         optional_dict: Dict[str, Any] = {}
         if "[" in content:
             if (content.count("[") != 1 or content.count("]") != 1
