@@ -16,12 +16,9 @@ class Output:
             turns: A list of turn dictionaries mapping drone IDs to hub names
                 or in-transit connection tuples.
         """
-        for i, turn in enumerate(turns[1:], 1):
-            print(f"Turn {i}: ", end="")
-            for drone_id, hub in turn.items():
-                if isinstance(hub, str):
-                    print(f"D{drone_id}-{hub} ", end="")
-                else:
-                    hub1, hub2 = hub
-                    print(f"D{drone_id}-{hub1}-{hub2} ", end="")
-            print()
+        for turn in turns[1:]:
+            formatted = [
+                f"D{d}-{h}" if isinstance(h, str) else f"D{d}-{h[0]}-{h[1]}"
+                for d, h in turn.items()
+            ]
+            print(" ".join(formatted))
