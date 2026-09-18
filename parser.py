@@ -111,8 +111,8 @@ class Parser:
         self, directive: str, content: str,
         line_number: int, hub_list: List[Hub]
     ) -> Hub:
-        params = content.split()[:3]
-        if len(params) < 3:
+        args = content.split()[:3]
+        if len(args) < 3:
             raise ParsingError("Missing positional argument", line_number)
         optional_dict: Dict[str, Any] = {}
         if "[" in content:
@@ -122,10 +122,10 @@ class Parser:
                     "Invalid bracket formatting for optional arguments",
                     line_number
                 )
-            optional_params = (
+            optional_args = (
                 content[content.index("["):].strip("[]")
             )
-            for pair in optional_params.split():
+            for pair in optional_args.split():
                 try:
                     key, value = pair.split("=", maxsplit=1)
                 except ValueError:
@@ -136,7 +136,7 @@ class Parser:
                 if key not in ("zone", "color", "max_drones"):
                     raise ParsingError(f"Invalid key '{key}'", line_number)
                 optional_dict[key] = value
-        name = params[0]
+        name = args[0]
         if "-" in name:
             raise ParsingError("'-' cannot be part of hub name", line_number)
         for hub in hub_list:
@@ -145,12 +145,12 @@ class Parser:
                     f"Hub name '{name}' used twice", line_number
                 )
         try:
-            pos_x = int(params[1])
-            pos_y = int(params[2])
+            pos_x = int(args[1])
+            pos_y = int(args[2])
         except ValueError:
             raise ParsingError(
                 ("Invalid coordinates. Expected '<int x> <int y>', got "
-                    f"'{params[1]} {params[2]}'"), line_number
+                    f"'{args[1]} {args[2]}'"), line_number
                 )
         if any(pos_x == h.pos_x and pos_y == h.pos_y for h in hub_list):
             raise ParsingError(
@@ -198,10 +198,10 @@ class Parser:
                     "Invalid bracket formatting for optional arguments",
                     line_number
                 )
-            optional_params = (
+            optional_args = (
                 content[content.index("["):].strip("[]")
             )
-            for pair in optional_params.split():
+            for pair in optional_args.split():
                 try:
                     key, value = pair.split("=", maxsplit=1)
                 except ValueError:
