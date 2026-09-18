@@ -20,8 +20,8 @@ class Visualizer:
         self.boundaries = self._get_boundaries()
         self.scale_factor = self._get_scale_factor()
         self.hub_pixels = {
-            hub.name: self._to_pixels(hub.pos_x, hub.pos_y)
-            for hub in self.hubs
+            h.name: self._to_pixels(h.pos_x, h.pos_y)
+            for h in self.hubs
         }
         self.hub_font = pygame.font.SysFont(
             None, int(min(min(self.scale_factor) * 0.2, 20))
@@ -137,8 +137,8 @@ class Visualizer:
             self.screen.blit(text_surface, (text_x, text_y))
 
     def _get_boundaries(self) -> Tuple[int, int, int, int]:
-        x_list = [hub.pos_x for hub in self.hubs]
-        y_list = [hub.pos_y for hub in self.hubs]
+        x_list = [h.pos_x for h in self.hubs]
+        y_list = [h.pos_y for h in self.hubs]
         return (min(x_list), max(x_list), min(y_list), max(y_list))
 
     def _get_scale_factor(self) -> Tuple[float, float]:

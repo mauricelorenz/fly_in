@@ -11,7 +11,7 @@ class Simulation:
     ) -> None:
         self.drones, self.hubs, self.connections = objects
         self.hub_lookup = {h.name: h for h in self.hubs}
-        self.adjacency = self._build_adjacency(self.hubs, self.connections)
+        self.adjacency = self._build_adjacency()
         self.occupied_hubs: Dict[Tuple[str, int], int] = {}
         self.occupied_connections: Dict[Tuple[str, str, int], int] = {}
         self.start_name = next(h.name for h in self.hubs if h.is_start)
@@ -27,13 +27,13 @@ class Simulation:
             drone_paths[drone.drone_id] = path
         return self._build_turns(drone_paths)
 
-    def _build_adjacency(
-        self, hubs: List[Hub], connections: List[Connection]
-    ) -> Dict[str, List[Connection]]:
-        adjacency: Dict[str, List[Connection]] = {h.name: [] for h in hubs}
-        for c in connections:
-            adjacency[c.hub1].append(c)
-            adjacency[c.hub2].append(c)
+    def _build_adjacency(self) -> Dict[str, List[Connection]]:
+        adjacency: Dict[str, List[Connection]] = {
+            h.name: [] for h in self.hubs
+        }
+        for connection in self.connections:
+            adjacency[connection.hub1].append(connection)
+            adjacency[connection.hub2].append(connection)
         return adjacency
 
     def _is_reachable(self) -> bool:
